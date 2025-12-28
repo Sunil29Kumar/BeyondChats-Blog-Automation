@@ -1,10 +1,12 @@
+import ScrapeBlogs from "./components/ScrapeBlogs ";
+import Home from "./pages/Home";
 
 
 function App() {
 
   return (
     <div>
-      <h1 className="text-blue-500" >sdfsd</h1>
+      <Home />
     </div>
   )
 }
