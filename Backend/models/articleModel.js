@@ -30,6 +30,11 @@ const articleSchema = new mongoose.Schema(
             type: String,
             default: "original", // phase 2 ke liye useful
         },
+        status: {
+            type: String,
+            enum: ["pending", "updated"],
+            default: "pending",
+        },
     },
     { timestamps: true }
 );
