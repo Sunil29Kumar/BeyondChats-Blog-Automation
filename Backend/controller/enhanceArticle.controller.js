@@ -74,10 +74,51 @@ export const enhanceArticle = async (req, res) => {
         }
 
         const finalLinks = Array.from(collectedLinks).slice(0, 2);
-        console.log("✅ Final Article Links:", finalLinks);
+        // console.log("✅ Final Article Links:", finalLinks);
 
 
-        return res.status(200).json({ links: finalLinks });
+        // Scrape main content from each link
+
+        const newConttentsFromLink = []
+
+        for (const link of finalLinks) {
+            const newPage = await browser.newPage();
+
+            if (finalLinks.indexOf(link) === 0) {
+                await newPage.goto(link, { waitUntil: "networkidle2" });
+                const text = await newPage.evaluate(() => {
+                    const el = document.querySelector("article")
+                    // console.log("link 1 text = ", el ? el.innerText.trim() : "");
+                    return el ? el.innerText.trim() : "";
+
+                });
+
+                newConttentsFromLink.push({
+                    url: link,
+                    content: text
+                });
+
+            }
+            if (finalLinks.indexOf(link) === 1) {
+                await newPage.goto(link, { waitUntil: "networkidle2" });
+                const text = await newPage.evaluate(() => {
+                    const el = document.querySelector(".content-bodY") || document.querySelector("main")
+                    // console.log("link 2 text = ", el ? el.innerText.trim() : "");
+                    return el ? el.innerText.trim() : "";
+
+                });
+
+                newConttentsFromLink.push({
+                    url: link,
+                    content: text
+                });
+            }
+        }
+
+        console.log("new context =", newConttentsFromLink);
+
+
+
 
     } catch (error) {
         console.error(error);
