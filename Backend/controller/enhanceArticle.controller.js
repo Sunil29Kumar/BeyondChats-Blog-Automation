@@ -1,57 +1,86 @@
 import Article from "../models/articleModel.js";
 import puppeteer from "puppeteer";
 
-
 export const enhanceArticle = async (req, res) => {
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     try {
-        // Find one article with status "pending"
         const article = await Article.findOne({ status: "pending" });
-        console.log(article);
+        if (!article) return res.status(404).json({ message: "No pending article" });
 
-        // extract title from article
         const articleTitle = article.title;
 
-        // =============== step 1 :  Searches this article’s title on Google ================
-
-        //  using puppeteer to automate browser
-        let browser;
-        browser = await puppeteer.launch({
+        const browser = await puppeteer.launch({
             headless: false,
             args: ["--no-sandbox", "--disable-setuid-sandbox"],
         });
 
         const page = await browser.newPage();
-        // 1️ Open Google search with article title
-        await page.goto(`https://www.google.com/search?q=${encodeURIComponent(articleTitle)}`, {
-            waitUntil: "networkidle2",
-        });
+
+        await page.goto(
+            `https://duckduckgo.com/?q=${encodeURIComponent(articleTitle)}&ia=web`,
+            { waitUntil: "networkidle2" }
+        );
+
+        const blockedDomains = [
+            "amazon.com", "amazon.ca", "beyondchats.com", "flipkart.com", "youtube.com", "facebook.com", "twitter.com", "instagram.com", "linkedin.com", "pinterest.com", "tiktok.com", "google.com"
+        ];
+
+        const isLikelyArticle = (url) => {
+            const lower = url.toLowerCase();
+            return !(
+                lower.includes("/dp/") || lower.includes("/product/") || lower.includes("/shop/") || lower.includes("/category/") || lower.includes("/collections/")
+            );
+        };
+
+        const collectedLinks = new Set();
+
+        for (let i = 0; i < 2; i++) {
+            // 1 Extract links (STABLE SELECTOR)
+            const rawLinks = await page.evaluate(() => {
+                return Array.from(document.querySelectorAll(".eVNpHGjtxRBq_gLOfGDr"))
+                    .map(a => a.href)
+                    .filter(h => h.startsWith("http"));
+            });
+
+            // 2 Filter
+            rawLinks.forEach(link => {
+                try {
+                    const hostname = new URL(link).hostname.replace("www.", "");
+                    if (
+                        !blockedDomains.includes(hostname) &&
+                        isLikelyArticle(link)
+                    ) {
+                        collectedLinks.add(link);
+                    }
+                } catch { }
+            });
+
+            if (collectedLinks.size >= 2) break;
+
+            // 3 Scroll
+            await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+            // await page.waitForTimeout(1500);
+            await delay(2000);
+
+            // 4 Click "More Results" (STABLE SELECTOR)
+            const moreBtn = await page.$("#more-results");
+            if (moreBtn) {
+                console.log("⬇ Clicking More Results");
+                await moreBtn.click();
+                await delay(2000);
+            } else {
+                console.log("❌ No More Results button");
+            }
+        }
+
+        const finalLinks = Array.from(collectedLinks).slice(0, 2);
+        console.log("✅ Final Article Links:", finalLinks);
 
 
-        // 2 wait till articles load
-        await page.waitForSelector("body");
+        return res.status(200).json({ links: finalLinks });
 
-        // // debugger 
-        // const debughtml = await page.evaluate(() => {
-        //     return [...document.querySelectorAll("a")].map(a => a.href).join("\n");
-        // })
-        // console.log("👀 Debug HTML:", debughtml);
-
-        // return
-
-        // take top 2 search results links
-        const links = await page.evaluate(() => {
-            const anchorNodes = [...document.querySelectorAll("a")];
-            const urls = anchorNodes
-                .map(a => a.href)
-                .filter(href => href.startsWith("http") && !href.includes( "beyoundchats.com", "youtube.com"))
-                .slice(0, 2);
-            return urls;
-        });
-        console.log("🔗 Links Found:", links);
-
-
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
     }
-    catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
+};

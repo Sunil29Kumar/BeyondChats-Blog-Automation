@@ -7,8 +7,10 @@ export const scrapeBeyondChatsBlogs = async (req, res) => {
     try {
 
         browser = await puppeteer.launch({
-            headless: true,
+            headless: false,
+            // args: ["--no-sandbox", "--disable-setuid-sandbox"],
             args: ["--no-sandbox", "--disable-setuid-sandbox"],
+
         });
 
         const page = await browser.newPage();
@@ -77,7 +79,7 @@ export const scrapeBeyondChatsBlogs = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Scraping Error:", error.message);
+        console.error(" Scraping Error:", error.message);
         return res.status(500).json({
             success: false,
             message: "Failed to scrape BeyondChats blogs",
