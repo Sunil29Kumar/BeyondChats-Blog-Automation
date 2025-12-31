@@ -11,7 +11,7 @@ await connectDB();
 const app = express()
 app.use(cors({
     credentials: true,
-    origin: ['http://localhost:5173', 'http://localhost:3000', "https://beyondchats.com/blogs"]
+    origin: ['http://localhost:5173', 'http://localhost:3000', "https://beyondchats.com/blogs","https://blocscaping-frontend.netlify.app/"]
 }))
 app.use(express.json())
 
