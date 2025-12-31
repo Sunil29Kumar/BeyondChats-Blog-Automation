@@ -1,5 +1,6 @@
 import Article from "../models/articleModel.js";
 import puppeteer from "puppeteer";
+import { updateArticleContent } from "../utils/updateArticleContentHuggingFace.js";
 
 export const enhanceArticle = async (req, res) => {
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -69,16 +70,14 @@ export const enhanceArticle = async (req, res) => {
                 await moreBtn.click();
                 await delay(2000);
             } else {
-                console.log("❌ No More Results button");
+                console.log(" No More Results button");
             }
         }
 
         const finalLinks = Array.from(collectedLinks).slice(0, 2);
-        // console.log("✅ Final Article Links:", finalLinks);
 
 
         // Scrape main content from each link
-
         const newConttentsFromLink = []
 
         for (const link of finalLinks) {
@@ -86,39 +85,52 @@ export const enhanceArticle = async (req, res) => {
 
             if (finalLinks.indexOf(link) === 0) {
                 await newPage.goto(link, { waitUntil: "networkidle2" });
-                const text = await newPage.evaluate(() => {
-                    const el = document.querySelector("article")
-                    // console.log("link 1 text = ", el ? el.innerText.trim() : "");
-                    return el ? el.innerText.trim() : "";
+                // const text = await newPage.evaluate(() => {
+                //     const el = document.querySelector(".pw-post-body-paragraph")``
+                //     return el ? el.innerText.trim() : "";
 
+                // });
+                const text = await newPage.evaluate(() => {
+                    const paragraphs = Array.from(
+                        document.querySelectorAll("article p.pw-post-body-paragraph")
+                    );
+
+                    return paragraphs
+                        .map(p => p.innerText.trim())
+                        .filter(Boolean)
+                        .join("\n\n");
                 });
 
                 newConttentsFromLink.push({
                     url: link,
-                    content: text
+                    content: text.slice(0, 500)
                 });
 
             }
             if (finalLinks.indexOf(link) === 1) {
                 await newPage.goto(link, { waitUntil: "networkidle2" });
                 const text = await newPage.evaluate(() => {
-                    const el = document.querySelector(".content-bodY") || document.querySelector("main")
+                    const el = document.querySelector(".content-body")
                     // console.log("link 2 text = ", el ? el.innerText.trim() : "");
                     return el ? el.innerText.trim() : "";
 
-                });
+                }); // Limiting to first 2000 characters
 
                 newConttentsFromLink.push({
                     url: link,
-                    content: text
+                    content: text.slice(0, 500)
                 });
             }
         }
 
-        console.log("new context =", newConttentsFromLink);
+        // console.log("new context =", newConttentsFromLink);
+        const result = await updateArticleContent(article.excerpt, newConttentsFromLink)
 
+        console.log("rs",result);
+        
+        // await browser.close();
 
-
+        return res.status(200).json({ message: "Article enhancement process completed." });
 
     } catch (error) {
         console.error(error);

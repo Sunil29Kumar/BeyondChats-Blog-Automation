@@ -9,7 +9,7 @@ const ArticleList = () => {
     useEffect(() => {
         const loadArticles = async () => {
             try {
-                const res = await fetch("http://localhost:5000/api/articles");
+                const res = await fetch(`${import.meta.env.BASE_URL}/articles`);
                 if (!res.ok) throw new Error("Failed to fetch articles");
                 const data = await res.json();
                 setArticles(data);
