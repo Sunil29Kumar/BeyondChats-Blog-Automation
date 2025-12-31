@@ -9,7 +9,7 @@ const ArticleList = () => {
     useEffect(() => {
         const loadArticles = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_BASE_URL}/articles`);
+                const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/articles`);
                 if (!res.ok) throw new Error("Failed to fetch articles");
                 const data = await res.json();
                 setArticles(data);

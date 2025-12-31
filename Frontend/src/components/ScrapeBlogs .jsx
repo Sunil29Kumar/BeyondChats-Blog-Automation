@@ -14,7 +14,7 @@ const ScrapeBlogs = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.BASE_URL}/scrape/beyondchats`,
+        `${import.meta.env.VITE_BASE_URL}/api/scrape/beyondchats`,
         { method: "POST" }
       );
 
