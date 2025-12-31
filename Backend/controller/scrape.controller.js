@@ -3,11 +3,12 @@ import Article from "../models/articleModel.js";
 
 export const scrapeBeyondChatsBlogs = async (req, res) => {
     let browser;
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     try {
 
         browser = await puppeteer.launch({
-            headless: false,
+            headless: true,
             // args: ["--no-sandbox", "--disable-setuid-sandbox"],
             args: ["--no-sandbox", "--disable-setuid-sandbox"],
 
@@ -34,11 +35,16 @@ export const scrapeBeyondChatsBlogs = async (req, res) => {
 
             return Math.max(...pageNumbers);
         });
+        await delay(2000);
+
+
+        console.log(lastPage);
 
 
         // 3️ Navigate to LAST PAGE
-        await page.goto(`https://beyondchats.com/blogs/page/${lastPage}/`, {
+        await page.goto(`https://beyondchats.com/blogs/page=${lastPage}`, {
             waitUntil: "networkidle2",
+
         });
 
         await page.waitForSelector("article");

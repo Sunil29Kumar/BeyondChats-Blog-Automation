@@ -15,7 +15,7 @@ const ScrapeBlogs = () => {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/scrape/beyondchats`,
-        { method: "POST" }
+        { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" } }
       );
 
       const data = await res.json();
